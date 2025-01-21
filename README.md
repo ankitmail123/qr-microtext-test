@@ -1,17 +1,22 @@
-# QR Code Generator with Microtext Overlay
+# Secure QR Code Generator
 
-A simple Python script to generate QR codes with microtext overlay around the borders.
+A Python script to generate secure QR codes with machine-detectable anti-copying features.
 
 ## Features
-- Generate QR codes from text or JSON data
-- Add microtext overlay around the QR code borders
-- Customizable font size for microtext
+- Generate QR codes with two types of security features:
+  1. **Micropattern QR**: High-contrast microscopic dot patterns optimized for mobile scanning
+  2. **Density Variation QR**: Binary density patterns that become uniform when copied
+- Security patterns are deterministically generated from a security code
+- Optimized for small-scale printing (20mm x 20mm)
+- Machine-detectable security features
 - High error correction level for better readability
 
 ## Requirements
 - Python 3.x
 - qrcode
 - Pillow (PIL)
+- numpy
+- matplotlib (for visualization)
 
 ## Installation
 1. Create a virtual environment (optional but recommended):
@@ -26,36 +31,43 @@ A simple Python script to generate QR codes with microtext overlay around the bo
    ```
 
 ## Usage
-Run the test script:
+Generate secure QR codes with custom text and security code:
 ```bash
-python qr_generator.py
+python qr_generator.py "your_text" "your_security_code"
 ```
 
-This will generate three test QR codes:
-1. Simple text QR code
-2. QR code with product information
-3. QR code with a URL
-
-The generated QR codes will be saved as PNG files in the current directory.
-
-## Customizing the Generator
-You can use the `MicrotextQRGenerator` class in your own code:
-
-```python
-from qr_generator import MicrotextQRGenerator
-
-# Create generator instance
-generator = MicrotextQRGenerator()
-
-# Generate QR code with custom data
-data = {
-    "product_name": "My Product",
-    "serial_number": "123ABC"
-}
-qr_image = generator.generate(data, "output.png")
+Example:
+```bash
+python qr_generator.py "Hello World" "SEC123"
 ```
+
+This will generate two QR codes:
+1. `secure_qr_micropattern_mini.png`: QR code with microscopic dot patterns
+2. `secure_qr_density_variation_mini.png`: QR code with density variation patterns
+
+## Printing Instructions
+For optimal results:
+1. Minimum printer resolution: 300 DPI
+2. Use high-quality paper (at least 80 gsm)
+3. Ensure printer is calibrated for sharp black output
+4. No scaling during printing (print at 100% size)
+5. Verify printed size is exactly 20mm x 20mm
+
+## Security Features
+1. **Micropattern QR**
+   - High-contrast microscopic dot patterns
+   - Patterns are derived from security code
+   - Optimized for mobile scanning
+   - Breaks when photocopied
+
+2. **Density Variation QR**
+   - Binary density patterns
+   - Pattern angles influenced by security code
+   - Becomes uniform when copied
+   - Machine-detectable variations
 
 ## Notes
-- The microtext uses Arial font by default, falling back to the system default font if Arial is not available
-- The QR code uses the highest error correction level (H) to ensure readability even with the microtext overlay
-- The microtext is truncated if too long to fit around the borders
+- Security patterns are designed for machine detection, not visual verification
+- QR codes use high error correction level (H) for reliability
+- Patterns are deterministically generated from the security code
+- Output size is optimized for 20mm x 20mm printing
