@@ -9,7 +9,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
 import ResultScreen from './src/screens/ResultScreen';
 
-export const APP_VERSION = "1.1.1";
+export const APP_VERSION = "1.1.3";
 
 const Stack = createNativeStackNavigator();
 

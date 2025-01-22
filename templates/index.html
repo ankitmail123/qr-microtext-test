@@ -199,26 +199,13 @@
             }
 
             try {
-                // Generate standard QR
-                const standardResponse = await fetch('/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        text: text,
-                        features: []
-                    })
-                });
-                const standardData = await standardResponse.json();
-                standardQRData = standardData.image;
-                document.getElementById('standard-qr').innerHTML = 
-                    `<img src="data:image/png;base64,${standardData.image}" alt="Standard QR Code">`;
-
-                // Generate secure QR
+                // Get selected features
                 const features = [];
                 if (document.getElementById('micropattern').checked) features.push('micropattern');
                 if (document.getElementById('density').checked) features.push('density');
 
-                const secureResponse = await fetch('/generate', {
+                // Generate both QRs
+                const response = await fetch('/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -226,10 +213,19 @@
                         features: features
                     })
                 });
-                const secureData = await secureResponse.json();
-                secureQRData = secureData.image;
+                const data = await response.json();
+                
+                // Display standard QR
+                document.getElementById('standard-qr').innerHTML = 
+                    `<img src="data:image/png;base64,${data.standard.image}" alt="Standard QR Code">`;
+                
+                // Display secure QR
                 document.getElementById('secure-qr').innerHTML = 
-                    `<img src="data:image/png;base64,${secureData.image}" alt="Secure QR Code">`;
+                    `<img src="data:image/png;base64,${data.secure.image}" alt="Secure QR Code">`;
+                
+                // Store QR data for download
+                standardQRData = data.standard.image;
+                secureQRData = data.secure.image;
             } catch (error) {
                 console.error('Error generating QR codes:', error);
                 alert('Error generating QR codes. Please try again.');

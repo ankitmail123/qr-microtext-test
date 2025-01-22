@@ -28,16 +28,40 @@ export default function ScannerScreen() {
     }
   }, [isFocused]);
 
-  const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
-    if (scanned || isProcessing || !isFocused) return;
+  const handleBarCodeScanned = async ({ data, bounds }: { type: string; data: string; bounds: { origin: [number, number] } }) => {
+    if (scanned || isProcessing || !isFocused || !cameraRef.current) return;
     
     try {
       setIsProcessing(true);
       console.log('Scanned data:', data);
 
-      // Analyze the QR code
-      const result = await analyzeQRCode(data);
-      console.log('Analysis result:', result);
+      // Capture the frame as base64
+      const photo = await cameraRef.current.takePictureAsync({
+        quality: 1,
+        base64: true,
+        skipProcessing: true,
+        exif: false,
+        imageType: 'jpg'
+      });
+
+      if (!photo.base64) {
+        throw new Error('Failed to capture image data');
+      }
+
+      console.log('Image captured, size:', photo.base64.length);
+
+      // Analyze the QR code with image data
+      const result = await analyzeQRCode(data, photo.base64);
+      
+      // Log detailed analysis results
+      console.log('Analysis Result:', {
+        text: result.text,
+        isAuthentic: result.isAuthentic,
+        features: result.features,
+        detectedFeatures: result.detectedFeatures,
+        hasValidSecurityCode: result.hasValidSecurityCode,
+        hasSecurityFeatures: result.hasSecurityFeatures
+      });
 
       // Navigate to result screen with all the data
       navigation.navigate('Result', {
