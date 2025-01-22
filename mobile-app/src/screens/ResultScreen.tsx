@@ -1,205 +1,130 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  useColorScheme,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RouteProp } from '@react-navigation/native';
+import { StyleSheet, Text, View, ScrollView } from 'react-native';
+import { useRoute } from '@react-navigation/native';
 
-type RootStackParamList = {
-  Result: {
-    isAuthentic: boolean;
+export default function ResultScreen() {
+  const route = useRoute();
+  const params = route.params as {
     text: string;
-    features: {
+    isAuthentic: boolean;
+    features: string[];
+    detectedFeatures: {
       micropattern: boolean;
-      densityVariation: boolean;
+      density: boolean;
     };
   };
-};
-
-type ResultScreenProps = {
-  route: RouteProp<RootStackParamList, 'Result'>;
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Result'>;
-};
-
-const ResultScreen = ({ route, navigation }: ResultScreenProps) => {
-  const { isAuthentic, text, features } = route.params;
-  const isDarkMode = useColorScheme() === 'dark';
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View
-          style={[
-            styles.resultBanner,
-            { backgroundColor: isAuthentic ? '#4CAF50' : '#F44336' },
-          ]}>
+    <ScrollView style={styles.container}>
+      <View style={styles.section}>
+        <Text style={styles.title}>Authentication Result</Text>
+        <View style={[
+          styles.resultBox,
+          params.isAuthentic ? styles.authenticBox : styles.invalidBox
+        ]}>
           <Text style={styles.resultText}>
-            {isAuthentic ? 'Authentic QR Code' : 'Invalid QR Code'}
+            {params.isAuthentic ? 'Authentic QR Code' : 'Invalid QR Code'}
           </Text>
         </View>
+      </View>
 
-        <View style={styles.contentContainer}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
-            Content
-          </Text>
-          <View style={styles.textContainer}>
-            <Text style={[styles.contentText, isDarkMode && styles.darkText]}>
-              {text}
-            </Text>
-          </View>
-        </View>
+      <View style={styles.section}>
+        <Text style={styles.title}>Content</Text>
+        <Text style={styles.content}>{params.text}</Text>
+      </View>
 
-        <View style={styles.featuresContainer}>
-          <Text style={[styles.sectionTitle, isDarkMode && styles.darkText]}>
-            Security Analysis
-          </Text>
-
+      <View style={styles.section}>
+        <Text style={styles.title}>Security Features</Text>
+        <View style={styles.featureList}>
           <View style={styles.featureItem}>
-            <Text style={[styles.featureTitle, isDarkMode && styles.darkText]}>
-              Micropattern Detection
+            <Text style={styles.featureLabel}>Micropattern Detection:</Text>
+            <Text style={[
+              styles.featureStatus,
+              params.detectedFeatures?.micropattern ? styles.detected : styles.notDetected
+            ]}>
+              {params.detectedFeatures?.micropattern ? 'Detected' : 'Not Found'}
             </Text>
-            <View
-              style={[
-                styles.featureStatus,
-                {
-                  backgroundColor: features.micropattern ? '#E8F5E9' : '#FFEBEE',
-                },
-              ]}>
-              <Text
-                style={[
-                  styles.featureStatusText,
-                  {
-                    color: features.micropattern ? '#2E7D32' : '#C62828',
-                  },
-                ]}>
-                {features.micropattern ? 'VERIFIED' : 'NOT FOUND'}
-              </Text>
-            </View>
           </View>
-
+          
           <View style={styles.featureItem}>
-            <Text style={[styles.featureTitle, isDarkMode && styles.darkText]}>
-              Density Pattern
+            <Text style={styles.featureLabel}>Density Pattern:</Text>
+            <Text style={[
+              styles.featureStatus,
+              params.detectedFeatures?.density ? styles.detected : styles.notDetected
+            ]}>
+              {params.detectedFeatures?.density ? 'Detected' : 'Not Found'}
             </Text>
-            <View
-              style={[
-                styles.featureStatus,
-                {
-                  backgroundColor: features.densityVariation
-                    ? '#E8F5E9'
-                    : '#FFEBEE',
-                },
-              ]}>
-              <Text
-                style={[
-                  styles.featureStatusText,
-                  {
-                    color: features.densityVariation ? '#2E7D32' : '#C62828',
-                  },
-                ]}>
-                {features.densityVariation ? 'VERIFIED' : 'NOT FOUND'}
-              </Text>
-            </View>
           </View>
         </View>
-
-        <TouchableOpacity
-          style={styles.scanButton}
-          onPress={() => navigation.navigate('Scanner')}>
-          <Text style={styles.scanButtonText}>Scan Another Code</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </ScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#f5f5f5',
   },
-  scrollContent: {
-    padding: 20,
-  },
-  resultBanner: {
+  section: {
+    backgroundColor: '#fff',
+    margin: 10,
     padding: 15,
     borderRadius: 8,
-    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  resultText: {
-    color: '#FFF',
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  contentContainer: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 20,
-  },
-  textContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 4,
-    padding: 10,
-    marginTop: 10,
-  },
-  contentText: {
-    fontSize: 16,
-    color: '#000000',
-    lineHeight: 24,
-  },
-  featuresContainer: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 20,
-  },
-  sectionTitle: {
+  title: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#000',
+    marginBottom: 10,
+    color: '#333',
   },
-  featureItem: {
-    marginBottom: 20,
-  },
-  featureTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#000',
-  },
-  featureStatus: {
-    padding: 8,
-    borderRadius: 4,
-    marginBottom: 8,
-  },
-  featureStatusText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  scanButton: {
-    backgroundColor: '#007AFF',
+  resultBox: {
     padding: 15,
     borderRadius: 8,
     alignItems: 'center',
   },
-  scanButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
+  authenticBox: {
+    backgroundColor: '#e8f5e9',
   },
-  darkText: {
-    color: '#FFFFFF',
+  invalidBox: {
+    backgroundColor: '#ffebee',
+  },
+  resultText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  content: {
+    fontSize: 16,
+    color: '#333',
+  },
+  featureList: {
+    gap: 10,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 6,
+  },
+  featureLabel: {
+    fontSize: 14,
+    color: '#333',
+  },
+  featureStatus: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  detected: {
+    color: '#4caf50',
+  },
+  notDetected: {
+    color: '#f44336',
   },
 });
-
-export default ResultScreen;

@@ -1,35 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
-import { Camera, CameraType } from 'expo-camera';
-import { BarCodeScanner } from 'expo-barcode-scanner';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { analyzeQRSecurity } from '../utils/securityAnalyzer';
+import { StyleSheet, Text, View, Button, Alert, ActivityIndicator } from 'react-native';
+import { Camera } from 'expo-camera';
+import { analyzeQRCode } from '../utils/securityAnalyzer';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-const SCAN_AREA_SIZE = SCREEN_WIDTH * 0.7;
-
-type RootStackParamList = {
-  Scanner: undefined;
-  Result: {
-    isAuthentic: boolean;
-    text: string;
-    features: {
-      micropattern: boolean;
-      densityVariation: boolean;
-    };
-  };
-};
-
-type ScannerScreenProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'Scanner'>;
-};
-
-export default function ScannerScreen({ navigation }: ScannerScreenProps) {
+export default function ScannerScreen() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const cameraRef = useRef<Camera>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const navigation = useNavigation();
+  const isFocused = useIsFocused();
+  const cameraRef = useRef<Camera | null>(null);
 
   useEffect(() => {
     const getBarCodeScannerPermissions = async () => {
@@ -40,77 +21,90 @@ export default function ScannerScreen({ navigation }: ScannerScreenProps) {
     getBarCodeScannerPermissions();
   }, []);
 
-  const handleBarCodeScanned = async ({ type, data, bounds }: { type: string; data: string; bounds: any }) => {
-    if (scanned || isAnalyzing) return;
+  useEffect(() => {
+    if (!isFocused) {
+      setScanned(false);
+      setIsProcessing(false);
+    }
+  }, [isFocused]);
+
+  const handleBarCodeScanned = async ({ data }: { type: string; data: string }) => {
+    if (scanned || isProcessing || !isFocused) return;
     
     try {
-      setIsAnalyzing(true);
-      setScanned(true);
+      setIsProcessing(true);
+      console.log('Scanned data:', data);
 
-      // Capture the frame
-      if (!cameraRef.current) return;
-      
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 1,
-        base64: true,
-        skipProcessing: true
-      });
+      // Analyze the QR code
+      const result = await analyzeQRCode(data);
+      console.log('Analysis result:', result);
 
-      // Analyze security features
-      const analysisResult = await analyzeQRSecurity(data, photo.uri);
-
-      // Navigate to results
+      // Navigate to result screen with all the data
       navigation.navigate('Result', {
-        isAuthentic: analysisResult.isAuthentic,
-        text: analysisResult.text,
-        features: {
-          micropattern: analysisResult.detectedFeatures.micropattern,
-          densityVariation: analysisResult.detectedFeatures.density
-        }
+        text: result.text,
+        isAuthentic: result.isAuthentic,
+        features: result.features,
+        detectedFeatures: result.detectedFeatures
       });
     } catch (error) {
-      console.error('Error processing QR code:', error);
-      alert('Failed to analyze QR code. Please try again.');
+      console.error('Scanning error:', error);
+      Alert.alert(
+        'Invalid QR Code',
+        'This QR code lacks required security features. Please scan a valid secure QR code.',
+        [{ text: 'Try Again', onPress: () => {
+          setScanned(false);
+          setIsProcessing(false);
+        }}]
+      );
     } finally {
-      setIsAnalyzing(false);
+      setScanned(true);
+      setIsProcessing(false);
     }
   };
 
   if (hasPermission === null) {
-    return <View style={styles.container}><Text>Requesting camera permission...</Text></View>;
+    return <Text style={styles.text}>Requesting camera permission...</Text>;
   }
   if (hasPermission === false) {
-    return <View style={styles.container}><Text>No access to camera</Text></View>;
+    return <Text style={styles.text}>No access to camera</Text>;
   }
 
   return (
     <View style={styles.container}>
-      <Camera
-        ref={cameraRef}
-        style={StyleSheet.absoluteFillObject}
-        type={CameraType.back}
-        barCodeScannerSettings={{
-          barCodeTypes: [BarCodeScanner.Constants.BarCodeType.qr],
-        }}
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.scanArea} />
+      {isFocused && (
+        <Camera
+          ref={cameraRef}
+          style={styles.camera}
+          type={Camera.Constants.Type.back}
+          onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+          ratio="16:9"
+        >
+          <View style={styles.overlay}>
+            <View style={styles.scanArea} />
+            {isProcessing ? (
+              <View style={styles.processingContainer}>
+                <ActivityIndicator size="large" color="#fff" />
+                <Text style={styles.scanText}>Processing QR Code...</Text>
+              </View>
+            ) : (
+              <Text style={styles.scanText}>
+                Align QR code within the frame
+              </Text>
+            )}
+          </View>
+        </Camera>
+      )}
+      {scanned && !isProcessing && (
+        <View style={styles.buttonContainer}>
+          <Button 
+            title="Scan Another Code" 
+            onPress={() => {
+              setScanned(false);
+              setIsProcessing(false);
+            }} 
+          />
         </View>
-        
-        <View style={styles.bottomBar}>
-          <Text style={styles.instructions}>
-            {isAnalyzing ? 'Analyzing security features...' : 'Position the QR code within the frame'}
-          </Text>
-          {scanned && !isAnalyzing && (
-            <TouchableOpacity
-              style={styles.scanButton}
-              onPress={() => setScanned(false)}>
-              <Text style={styles.scanButtonText}>Tap to Scan Again</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </Camera>
+      )}
     </View>
   );
 }
@@ -120,6 +114,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#000',
   },
+  camera: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -127,36 +124,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scanArea: {
-    width: SCAN_AREA_SIZE,
-    height: SCAN_AREA_SIZE,
+    width: 250,
+    height: 250,
     borderWidth: 2,
-    borderColor: '#FFF',
+    borderColor: '#fff',
     backgroundColor: 'transparent',
   },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    alignItems: 'center',
+  buttonContainer: {
+    padding: 16,
+    backgroundColor: '#fff',
   },
-  instructions: {
-    color: '#FFF',
+  text: {
+    flex: 1,
+    fontSize: 16,
     textAlign: 'center',
-    fontSize: 16,
-    marginBottom: 10,
+    padding: 20,
+    color: '#fff',
+    backgroundColor: '#000',
   },
-  scanButton: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 25,
-    marginTop: 10,
-  },
-  scanButtonText: {
-    color: '#FFF',
+  scanText: {
+    color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  processingContainer: {
+    marginTop: 20,
+    alignItems: 'center',
   },
 });
