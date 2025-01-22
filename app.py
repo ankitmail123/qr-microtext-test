@@ -1,63 +1,56 @@
 from flask import Flask, render_template, request, jsonify
-from qr_generator import MiniSecureQRGenerator
-import base64
+import qrcode
+from PIL import Image, ImageDraw, ImageFont
 import io
-import secrets
+import base64
+import json
+import os
 
 app = Flask(__name__, 
            static_folder='static',
            template_folder='templates')
-
-qr_generator = MiniSecureQRGenerator()
 
 @app.route('/')
 def home():
     return render_template('index.html')
 
 @app.route('/generate', methods=['POST'])
-def generate_qr():
+def generate():
     try:
         data = request.json
         text = data.get('text', '')
-        security_code = data.get('security_code', secrets.token_hex(4))  # Generate random if not provided
         
-        if not text:
-            return jsonify({
-                'status': 'error',
-                'message': 'No text provided'
-            }), 400
-            
-        # Generate QR codes with security features
-        variants = qr_generator.generate_all_variants(text, security_code)
+        # Create QR code with high error correction
+        qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_H,
+            box_size=10,
+            border=4,
+        )
         
-        # Convert all variants to base64
-        images = {}
-        for feature_name, (qr_image, feature_info) in variants.items():
-            buffered = io.BytesIO()
-            qr_image.save(buffered, format="PNG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-            
-            images[feature_name] = {
-                'image': img_str,
-                'name': feature_info.name,
-                'description': feature_info.description,
-                'recommended_size': feature_info.recommended_size,
-                'min_dpi': feature_info.min_dpi,
-                'detection_method': feature_info.detection_method
-            }
+        # Add data to QR code
+        qr.add_data(text)
+        qr.make(fit=True)
+        
+        # Create QR code image
+        qr_image = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert to base64 for response
+        buffered = io.BytesIO()
+        qr_image.save(buffered, format="PNG")
+        qr_base64 = base64.b64encode(buffered.getvalue()).decode('utf-8')
         
         return jsonify({
             'status': 'success',
-            'security_code': security_code,  # Return the security code used
-            'images': images,
-            'print_instructions': qr_generator.get_print_instructions()
+            'image': qr_base64,
+            'message': 'QR code generated successfully'
         })
+        
     except Exception as e:
-        print(f"Error: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
-        }), 400
+        }), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

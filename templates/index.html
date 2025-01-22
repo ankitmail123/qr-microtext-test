@@ -16,175 +16,183 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .product-title {
+            font-size: 24px;
+            color: #333;
+            margin: 0;
+        }
+        .version {
+            font-size: 14px;
+            color: #666;
+            margin: 5px 0 0 0;
+        }
         .input-section {
             margin-bottom: 20px;
         }
-        textarea {
-            width: 100%;
-            height: 100px;
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            resize: vertical;
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
         }
-        input[type="text"] {
+        input[type="text"], textarea {
             width: 100%;
-            padding: 10px;
-            margin: 10px 0;
+            padding: 8px;
+            margin-bottom: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .security-features {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .feature-option {
+            margin: 10px 0;
         }
         button {
-            padding: 12px 24px;
             background-color: #007bff;
             color: white;
+            padding: 10px 20px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
-            transition: background-color 0.2s;
         }
         button:hover {
             background-color: #0056b3;
         }
-        .qr-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+        #qrcode {
             margin-top: 20px;
+            text-align: center;
         }
-        .qr-card {
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .qr-card img {
-            max-width: 200px;
-            margin: 10px auto;
-            display: block;
-        }
-        .qr-info {
-            margin-top: 15px;
-            text-align: left;
-            font-size: 14px;
-        }
-        .qr-info h3 {
-            margin: 0 0 10px 0;
-            color: #333;
-        }
-        .qr-info p {
-            margin: 5px 0;
-            color: #666;
-        }
-        .error {
-            color: #dc3545;
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
-            background-color: #f8d7da;
-        }
-        .security-code {
-            background-color: #e9ecef;
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            font-family: monospace;
-        }
-        .print-instructions {
+        .download-section {
             margin-top: 20px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            white-space: pre-line;
+            text-align: center;
+        }
+        #downloadBtn {
+            background-color: #28a745;
+        }
+        #downloadBtn:hover {
+            background-color: #218838;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Secure QR Code Generator</h1>
-        <div class="input-section">
-            <textarea id="inputText" placeholder="Enter text to generate QR code..."></textarea>
-            <input type="text" id="securityCode" placeholder="Enter security code (optional)">
-            <br>
-            <button onclick="generateQR()">Generate Secure QR Codes</button>
+        <div class="header">
+            <h1 class="product-title">Secure QR Code Generator</h1>
+            <p class="version">v1.1</p>
         </div>
-        <div id="result">
-            <div id="securityCodeDisplay" class="security-code" style="display: none;"></div>
-            <div id="qrGrid" class="qr-grid"></div>
-            <div id="printInstructions" class="print-instructions" style="display: none;"></div>
-            <div id="error" class="error" style="display: none;"></div>
+        
+        <div class="input-section">
+            <label for="text">Enter Text Content:</label>
+            <textarea id="text" rows="4" placeholder="Enter the text content that will be displayed to users"></textarea>
+        </div>
+
+        <div class="security-features">
+            <h3>Security Features</h3>
+            <div class="feature-option">
+                <input type="checkbox" id="micropattern" checked>
+                <label for="micropattern">Micropattern Security (Recommended)</label>
+            </div>
+            <div class="feature-option">
+                <input type="checkbox" id="density">
+                <label for="density">Density Pattern Security</label>
+            </div>
+        </div>
+
+        <button onclick="generateQR()">Generate QR Code</button>
+        
+        <div id="qrcode"></div>
+        
+        <div class="download-section">
+            <button id="downloadBtn" style="display: none;" onclick="downloadQR()">Download QR Code</button>
         </div>
     </div>
 
     <script>
+        let qr = null;
+        
+        function generateSecurityCode(features) {
+            const patterns = [];
+            if (features.micropattern) {
+                patterns.push({
+                    type: 'micropattern',
+                    value: generateRandomPattern(32)
+                });
+            }
+            if (features.density) {
+                patterns.push({
+                    type: 'density',
+                    value: generateRandomPattern(32)
+                });
+            }
+            return btoa(JSON.stringify(patterns));
+        }
+
+        function generateRandomPattern(length) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+
         function generateQR() {
-            const text = document.getElementById('inputText').value.trim();
-            const securityCode = document.getElementById('securityCode').value.trim();
-            const errorDiv = document.getElementById('error');
-            const qrGrid = document.getElementById('qrGrid');
-            const securityCodeDisplay = document.getElementById('securityCodeDisplay');
-            const printInstructions = document.getElementById('printInstructions');
-
-            errorDiv.style.display = 'none';
-            qrGrid.innerHTML = '';
-            securityCodeDisplay.style.display = 'none';
-            printInstructions.style.display = 'none';
-
+            const text = document.getElementById('text').value;
             if (!text) {
-                errorDiv.textContent = 'Please enter some text';
-                errorDiv.style.display = 'block';
+                alert('Please enter text content');
                 return;
             }
 
-            fetch('/generate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    text: text,
-                    security_code: securityCode
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Display security code
-                    securityCodeDisplay.textContent = `Security Code: ${data.security_code}`;
-                    securityCodeDisplay.style.display = 'block';
+            const features = {
+                micropattern: document.getElementById('micropattern').checked,
+                density: document.getElementById('density').checked
+            };
 
-                    // Display QR codes
-                    Object.entries(data.images).forEach(([key, info]) => {
-                        const card = document.createElement('div');
-                        card.className = 'qr-card';
-                        
-                        card.innerHTML = `
-                            <h3>${info.name}</h3>
-                            <img src="data:image/png;base64,${info.image}" alt="${info.name}">
-                            <div class="qr-info">
-                                <p><strong>Description:</strong> ${info.description}</p>
-                                <p><strong>Recommended Size:</strong> ${info.recommended_size}</p>
-                                <p><strong>Minimum DPI:</strong> ${info.min_dpi}</p>
-                                <p><strong>Detection Method:</strong> ${info.detection_method}</p>
-                            </div>
-                        `;
-                        
-                        qrGrid.appendChild(card);
-                    });
+            if (!features.micropattern && !features.density) {
+                alert('Please select at least one security feature');
+                return;
+            }
 
-                    // Display printing instructions
-                    printInstructions.textContent = data.print_instructions;
-                    printInstructions.style.display = 'block';
-                } else {
-                    throw new Error(data.message || 'Failed to generate QR code');
-                }
-            })
-            .catch(error => {
-                errorDiv.textContent = error.message;
-                errorDiv.style.display = 'block';
+            const securityCode = generateSecurityCode(features);
+            const qrData = `${text}|||${securityCode}`;
+
+            const qrDiv = document.getElementById('qrcode');
+            qrDiv.innerHTML = '';
+            
+            qr = new QRCode(qrDiv, {
+                text: qrData,
+                width: 256,
+                height: 256,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
             });
+
+            document.getElementById('downloadBtn').style.display = 'inline-block';
+        }
+
+        function downloadQR() {
+            if (!qr) return;
+            
+            const canvas = document.querySelector('#qrcode canvas');
+            const image = canvas.toDataURL('image/png');
+            
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = 'secure-qr-code.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>
