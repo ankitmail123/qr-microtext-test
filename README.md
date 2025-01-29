@@ -66,6 +66,37 @@ For optimal results:
    - Becomes uniform when copied
    - Machine-detectable variations
 
+## Testing
+
+The repository includes comprehensive test suites:
+
+1. **Security Feature Tests** (`test_security_features.py`)
+   - Pattern generation verification
+   - Density variation checks
+   - Pattern preservation across quality levels
+
+2. **Test Pattern Generation** (`generate_test_patterns.py`)
+   - Generates all pattern types
+   - Creates high/medium/low quality versions
+   - Saves pattern information in JSON format
+
+### Running Tests
+
+```bash
+# Run all tests with coverage
+pytest test_security_features.py -v --cov=app
+
+# Generate test patterns
+python generate_test_patterns.py
+```
+
+### Continuous Integration
+
+GitHub Actions automatically runs tests on:
+- Python 3.8
+- Python 3.9
+- Python 3.10
+
 ## Notes
 - Security patterns are designed for machine detection, not visual verification
 - QR codes use high error correction level (H) for reliability
